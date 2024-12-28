@@ -8,6 +8,28 @@ local function detectPeripheral(type)
     return nil
 end
 
+-- Function to wrap text
+local function wrapText(text, width)
+    local lines = {}
+    local line = ""
+    for word in text:gmatch("%S+") do
+        if #line + #word + 1 > width then
+            table.insert(lines, line)
+            line = word
+        else
+            if #line > 0 then
+                line = line .. " " .. word
+            else
+                line = word
+            end
+        end
+    end
+    if #line > 0 then
+        table.insert(lines, line)
+    end
+    return lines
+end
+
 -- Detect peripherals
 local modemSide = detectPeripheral("modem")
 local printerSide = detectPeripheral("printer")
@@ -36,10 +58,14 @@ while true do
     -- Check if the message can be printed
     local printer = peripheral.wrap(printerSide)
     if printer and printer.getPaperLevel() > 0 then
+        local width = 25  -- Maximum characters per line for the printer
+        local wrappedLines = wrapText(message, width)
+
         printer.newPage()
-        printer.write("Fax from ID: " .. senderId)
-        printer.write("\n")
-        printer.write(message)
+        printer.write("Fax from ID: " .. senderId .. "\n")
+        for _, line in ipairs(wrappedLines) do
+            printer.write(line .. "\n")
+        end
         printer.endPage()
         print("Message printed successfully!")
     else
